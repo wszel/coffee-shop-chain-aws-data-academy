@@ -44,7 +44,7 @@ The user story example:
 ![user-story-reliability](https://user-images.githubusercontent.com/38794956/210566767-5f0a45b8-7dd6-483c-a050-09dbdbe0b48c.png)
 
 
-## Database schema
+## Data modeling
 
 The data was organised into three .csv files: Sales Reciept, Pastry Inventory snd Sales Target. 
 The data was modeled with the following approach: 
