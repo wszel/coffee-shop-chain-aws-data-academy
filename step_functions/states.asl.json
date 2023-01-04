@@ -1,0 +1,227 @@
+{
+    "StartAt": "Check Files In S3",
+    "States": {
+      "Check Files In S3": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:check_files_s3:$LATEST",
+          "Payload": {
+            "Bucket": "raw-coffee-shop-ms",
+            "Files": ["sales-reciept/SalesReciept.csv", "sales-target/SalesTarget.csv", "pastry-inventory/PastryInventory.csv"]
+          }
+        },
+        "Next": "Run Crawler Raw"
+      },
+        "Run Crawler Raw": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:start_crawler:$LATEST",
+              "Payload": {
+                "Input": "crawler-coffee-shop-raw"
+              }
+            },
+            "Next": "Check Crawler Raw"
+          },
+          "Check Crawler Raw": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:check_crawler:$LATEST",
+              "Payload": {
+                "Input": "crawler-coffee-shop-raw"
+              }
+            },
+            "Next": "Start Data Partition"
+          },
+        "Start Data Partition": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::glue:startJobRun.sync",
+        "Parameters": {
+          "JobName": "partition_data"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "IntervalSeconds": 10,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Run Crawler Clean"
+      },
+      "Run Crawler Clean": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:start_crawler:$LATEST",
+          "Payload": {
+            "Input": "crawler-coffee-shop-clean"
+          }
+        },
+        "Next": "Check Crawler Clean"
+      },
+      "Check Crawler Clean": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:check_crawler:$LATEST",
+          "Payload": {
+            "Input": "crawler-coffee-shop-clean"
+          }
+        },
+        "Next": "Create Conform Tables"
+      },
+      "Create Conform Tables": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::glue:startJobRun.sync",
+        "Parameters": {
+          "JobName": "tables_conform"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "IntervalSeconds": 10,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Run Crawler Conform"
+      },
+      "Run Crawler Conform": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:start_crawler:$LATEST",
+          "Payload": {
+            "Input": "crawler-coffee-shop-conform"
+          }
+        },
+        "Next": "Check Crawler Conform"
+      },
+      "Check Crawler Conform": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:check_crawler:$LATEST",
+          "Payload": {
+            "Input": "crawler-coffee-shop-conform"
+          }
+        },
+        "Next": "Create Conform Joined Tables"
+      },
+      "Create Conform Joined Tables": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::glue:startJobRun.sync",
+        "Parameters": {
+          "JobName": "joined_tables_conform"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "IntervalSeconds": 10,
+            "MaxAttempts": 2,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Run Crawler Conform for Joined"
+      },
+      "Run Crawler Conform for Joined": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:start_crawler:$LATEST",
+          "Payload": {
+            "Input": "crawler-coffee-shop-conform"
+          }
+        },
+        "Next": "Check Crawler Conform for Joined"
+      },
+      "Check Crawler Conform for Joined": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:check_crawler:$LATEST",
+          "Payload": {
+            "Input": "crawler-coffee-shop-conform"
+          }
+        },
+        "Next": "Create Reports"
+      },
+        "Create Reports": {
+          "Type": "Parallel",
+          "Next": "Send Email Notification",
+          "Branches": [
+            {
+              "StartAt": "Sales Report",
+                "States": {
+                  "Sales Report": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke",
+                      "Parameters": {
+                        "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:create_sales_report:$LATEST",
+                        "Payload": {
+                          "Filename": "/sales.xlsx",
+                          "Bucket": "reports-ms"
+                      }
+                    }, 
+                    "End": true
+                  }
+                } 
+              },
+            {
+              "StartAt": "Customer Report",
+                "States": {
+                  "Customer Report": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke",
+                      "Parameters": {
+                        "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:create_report:$LATEST",
+                        "Payload": {
+                          "Filename": "/customers.xlsx",
+                          "Bucket": "reports-ms"
+                      }
+                    }, 
+                    "End": true
+                  }
+                }
+              },
+            {
+              "StartAt": "Employee Report",
+                "States": {
+                  "Employee Report": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::lambda:invoke",
+                      "Parameters": {
+                        "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:create_employee_report:$LATEST",
+                        "Payload": {
+                          "Filename": "/employees.xlsx",
+                          "Bucket": "reports-ms"
+                      }
+                    },
+                    "End": true
+                  }
+                }
+              }
+            ]
+          },
+          "Send Email Notification": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "arn:aws:lambda:eu-west-1:544851052238:function:send_email:$LATEST",
+              "Payload": {
+                "Input": "crawler-coffee-shop-conform"
+              }
+            },
+            "End": true
+          }
+      }
+    }
