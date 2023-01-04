@@ -73,7 +73,7 @@ The following buckets have been defined:
 #### Crawlers
 Map data from S3 buckets to Databases to be transformed further.
 
-####Databases
+#### Databases
 Hold all mapped tables.
 
 #### Jobs
