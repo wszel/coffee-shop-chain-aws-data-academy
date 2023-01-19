@@ -7,7 +7,6 @@ Data for a coffee shop chain with three locations in New York City.
 - key metrics
 - case presentation
 - user stories
-- architecture 
 - data modeling
 - architecture (AWS)
 - data visualisation (PowerBI)
