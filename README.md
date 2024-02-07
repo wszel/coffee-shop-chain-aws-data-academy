@@ -1,4 +1,4 @@
-# Coffee shop chain - AWS Data Academy
+# BrewInsight: Coffee Chain Retail Data Analysis Pipeline 
  
 The project of data analysys pipeline on a fictional coffee chain retail data. 
 Data for a coffee shop chain with three locations in New York City. 
